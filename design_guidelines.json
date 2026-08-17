@@ -1,0 +1,178 @@
+{
+  "app_name": "Spoilancer",
+  "personality": "6 Glass / Luxe DARK",
+  "personality_one_liner": "A cinematic, expensive, and flowy financial command center that feels like an exclusive club.",
+  "color": {
+    "surface": "#0B0B0E",
+    "onSurface": "#F2F2F5",
+    "surfaceSecondary": "#16161A",
+    "onSurfaceSecondary": "#A1A1AA",
+    "surfaceTertiary": "#222228",
+    "onSurfaceTertiary": "#8A8A93",
+    "surfaceInverse": "#F5F5F5",
+    "onSurfaceInverse": "#0B0B0E",
+    "brand": "#E6C998",
+    "brandPrimary": "#D4AF37",
+    "onBrandPrimary": "#0B0B0E",
+    "brandSecondary": "#C5A059",
+    "onBrandSecondary": "#0B0B0E",
+    "brandTertiary": "#2E281F",
+    "onBrandTertiary": "#E6C998",
+    "success": "#00C781",
+    "onSuccess": "#003320",
+    "warning": "#F5A623",
+    "onWarning": "#332100",
+    "error": "#E5484D",
+    "onError": "#330A0B",
+    "info": "#8E8E93",
+    "onInfo": "#0B0B0E",
+    "border": "#222228",
+    "borderStrong": "#3A3A40",
+    "divider": "#1F1F24"
+  },
+  "typography": {
+    "displayFontFamily": "Fraunces",
+    "textFontFamily": "Manrope",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Generous breathing room. Elements should feel intentionally placed, never cramped. Use large safe-area margins.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": "0",
+  "navigation": "bottom_tabs",
+  "icon_set": "Phosphor",
+  "glassmorphism": {
+    "enabled": true,
+    "do's": [
+      "Use heavy glass with translucent underlying tint for featured home cards over background imagery.",
+      "Use glass for sticky bottom navigation and headers.",
+      "Ensure foreground text on glass is highly readable via underlying >= 75% opacity dark scrims."
+    ],
+    "dont's": [
+      "Don't apply glass to basic list rows, chips, or inputs.",
+      "Don't rely on blur alone; always use a tinted base."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Onboarding",
+      "purpose": "Define daily expense limits (Mon-Sun) with a flowy progress bar.",
+      "states": {
+        "loading": "Centered champagne-tinted spinner.",
+        "empty": "N/A",
+        "error": "Soft red snackbar at the top."
+      },
+      "layout": "Screen fills 0% to 100% via a thin, rounded horizontal bar with a gradient fill and soft easing. The day selector is a dynamic list below the bar. As one day is filled, it softly transitions into completed state and the next day fades in. Large Fraunces titles set the cinematic tone."
+    },
+    {
+      "name": "PreHomeGate",
+      "purpose": "Strict gate to force logging of scheduled expenses before accessing Home.",
+      "states": {
+        "loading": "N/A",
+        "empty": "N/A",
+        "error": "Shake animation on input."
+      },
+      "layout": "Implemented as a non-dismissible stacked full-screen glass modal over the blurred Home screen. Dark, immersive, forces the user to clear pending limits to 'unlock' the app."
+    },
+    {
+      "name": "Home",
+      "purpose": "Dashboard displaying current Savings, Spoilance, and quick actions.",
+      "states": {
+        "loading": "Skeleton loaders with shimmer on cards.",
+        "empty": "N/A",
+        "error": "Failed to load balances."
+      },
+      "layout": "Features two large glass hero cards (Savings and Spoilance) resting over an abstract dark flowing wave background. Use a vertical gradient scrim to ensure ₹ numbers are legible. Quick action buttons (Edit Daily Limits, AI Advisor) sit below in a clean 2-column grid. The Spoilance Logger is a prominent floating glass FAB."
+    },
+    {
+      "name": "SpoilanceLogger",
+      "purpose": "Log expenses dynamically with a live animated running total.",
+      "states": {
+        "loading": "N/A",
+        "empty": "Initial state asking for item count.",
+        "error": "Highlight missing cost fields."
+      },
+      "layout": "Starts with an elegant prompt for item count. Upon entry, a dynamic list of rows expands fluidly. At the top, a large, sticky Fraunces running total animates (number counter effect) as the user types costs. Uses bottom sheet for entry."
+    },
+    {
+      "name": "EditDailyLimits",
+      "purpose": "Modify expense limits per day.",
+      "states": {
+        "loading": "N/A",
+        "empty": "N/A",
+        "error": "Validation error text below input."
+      },
+      "layout": "Day selector chips in a sticky horizontal scroll row. Form fields use `surfaceTertiary` with large tap targets. A sticky 'Save' button is pinned at the bottom, above the safe area."
+    },
+    {
+      "name": "History",
+      "purpose": "View daily/monthly spending and all-time totals.",
+      "states": {
+        "loading": "Skeleton list rows.",
+        "empty": "Charcoal textured background with a subtle 'No records' text.",
+        "error": "Retry state."
+      },
+      "layout": "Refined list view. Dates and totals are in Fraunces, metadata in Manrope. Monthly summaries are separated by subtle glass section headers."
+    }
+  ],
+  "images": {
+    "home_spoilance_card": {
+      "url": "https://images.unsplash.com/photo-1710438399422-2fca27686bcd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2MzR8MHwxfHNlYXJjaHwxfHxkYXJrJTIwYWJzdHJhY3QlMjBmbG93aW5nJTIwd2F2ZSUyMHRleHR1cmV8ZW58MHx8fHwxNzg2OTQ2OTI5fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Dark abstract flowing wave texture"
+    },
+    "advisor_background": {
+      "url": "https://images.pexels.com/photos/19889193/pexels-photo-19889193.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "Emerald fluid gradient background"
+    },
+    "empty_history_texture": {
+      "url": "https://images.unsplash.com/photo-1578662996442-48f60103fc96?crop=entropy&cs=srgb&fm=jpg&ixid=M3w8NjY2NjV8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBkYXJrJTIwY2hhcmNvYWwlMjB0ZXh0dXJlfGVufDB8fHx8MTc4Njk0NjkyOXww&ixlib=rb-4.1.0&q=85",
+      "alt": "Luxury dark charcoal texture"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Strictly adhere to the dark, premium District-like aesthetic. Pure black is forbidden; rely on Midnight Obsidian (#0B0B0E) and Charcoal (#16161A).",
+    "Use Fraunces strictly for large numeric values (₹ balances) and primary titles. Use Manrope for everything else.",
+    "Implement the flowy progress bar in Onboarding using Reanimated, ensuring a smooth determinate fill.",
+    "The Spoilance Logger running total MUST have a live animated number counter effect.",
+    "The PreHomeGate must act as a strict modal that obscures the Home screen (heavy blur) until the user logs the missing expenses.",
+    "Apply the gradient-to-dark scrim pattern (Layer 1) over the abstract wave background on the Home cards to guarantee text readability.",
+    "No blue or purple allowed. Use Champagne Gold for accents and Emerald solely for success/money."
+  ],
+  "haptics": {
+    "primary_button_press": "impactMedium",
+    "tab_switch": "selection",
+    "running_total_update": "impactLight",
+    "progress_bar_step": "impactLight"
+  }
+}
