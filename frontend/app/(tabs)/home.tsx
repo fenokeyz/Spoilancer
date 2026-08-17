@@ -289,17 +289,19 @@ function EditBalancesModal({
               testID="edit-savings-input"
               label="Savings"
               value={savings}
-              onChangeText={(t) => setSavings(t.replace(/[^0-9.]/g, ""))}
+              onChangeText={setSavings}
               prefix="₹"
               keyboardType="numeric"
+              money
             />
             <LabeledInput
               testID="edit-spoilance-input"
               label="Spoilance"
               value={spoilance}
-              onChangeText={(t) => setSpoilance(t.replace(/[^0-9.]/g, ""))}
+              onChangeText={setSpoilance}
               prefix="₹"
               keyboardType="numeric"
+              money
             />
             <PrimaryButton testID="save-balances-button" label="Save balances" onPress={save} />
 
@@ -309,9 +311,10 @@ function EditBalancesModal({
               testID="move-amount-input"
               label="Amount to move"
               value={moveAmt}
-              onChangeText={(t) => setMoveAmt(t.replace(/[^0-9.]/g, ""))}
+              onChangeText={setMoveAmt}
               prefix="₹"
               keyboardType="numeric"
+              money
             />
             <GhostButton testID="move-to-savings-button" label="Move to savings" onPress={move} />
           </KeyboardAwareScrollView>

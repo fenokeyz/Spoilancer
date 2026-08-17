@@ -131,10 +131,11 @@ export default function SpoilanceLogger() {
                   testID={`item-cost-${i}`}
                   label="Cost"
                   value={r.cost}
-                  onChangeText={(t) => updateRow(i, { cost: t.replace(/[^0-9.]/g, "") })}
+                  onChangeText={(t) => updateRow(i, { cost: t })}
                   placeholder="0"
                   prefix="₹"
                   keyboardType="numeric"
+                  money
                 />
               </Animated.View>
             ))}

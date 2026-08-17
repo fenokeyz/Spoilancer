@@ -25,6 +25,7 @@ export function LabeledInput({
   multiline,
   testID,
   autoFocus,
+  money,
   ...rest
 }: {
   label: string;
@@ -35,7 +36,19 @@ export function LabeledInput({
   multiline?: boolean;
   testID?: string;
   autoFocus?: boolean;
+  money?: boolean;
 } & TextInputProps) {
+  const displayValue = money ? groupIndianInput(value) : value;
+
+  function handleChange(t: string) {
+    if (!money) return onChangeText(t);
+    // strip commas + anything non-numeric, keep a single decimal point
+    const raw = t.replace(/,/g, "").replace(/[^0-9.]/g, "");
+    const parts = raw.split(".");
+    const cleaned = parts.length > 1 ? `${parts[0]}.${parts.slice(1).join("")}` : raw;
+    onChangeText(cleaned);
+  }
+
   return (
     <View style={styles.inputWrap}>
       <AppText variant="caption" style={styles.inputLabel}>
@@ -45,8 +58,8 @@ export function LabeledInput({
         {prefix ? <AppText variant="heading" style={styles.prefix}>{prefix}</AppText> : null}
         <TextInput
           testID={testID}
-          value={value}
-          onChangeText={onChangeText}
+          value={displayValue}
+          onChangeText={handleChange}
           placeholder={placeholder}
           placeholderTextColor={colors.onSurfaceTertiary}
           keyboardType={keyboardType}
@@ -58,6 +71,20 @@ export function LabeledInput({
       </View>
     </View>
   );
+}
+
+// Formats a raw numeric string with Indian (lakh/crore) comma grouping for display,
+// preserving a trailing decimal being typed.
+function groupIndianInput(raw: string): string {
+  if (!raw) return "";
+  const [intPart, decPart] = raw.split(".");
+  let grouped = intPart;
+  if (intPart.length > 3) {
+    const last3 = intPart.slice(-3);
+    const rest = intPart.slice(0, -3);
+    grouped = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + "," + last3;
+  }
+  return decPart !== undefined ? `${grouped}.${decPart}` : grouped;
 }
 
 export interface FieldDraft {
@@ -146,10 +173,11 @@ export function FieldEditorModal({
               testID="field-amount-input"
               label="Daily limit"
               value={draft.amount}
-              onChangeText={(t) => setDraft((d) => ({ ...d, amount: t.replace(/[^0-9.]/g, "") }))}
+              onChangeText={(t) => setDraft((d) => ({ ...d, amount: t }))}
               placeholder="0"
               prefix="₹"
               keyboardType="numeric"
+              money
             />
             <LabeledInput
               testID="field-desc-input"

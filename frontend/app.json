@@ -23,7 +23,12 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.emergent.mobileproto.xnzlbn",
-      "permissions": ["POST_NOTIFICATIONS", "SCHEDULE_EXACT_ALARM"]
+      "permissions": [
+        "POST_NOTIFICATIONS",
+        "SCHEDULE_EXACT_ALARM",
+        "READ_SMS",
+        "RECEIVE_SMS"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -47,7 +52,8 @@
         {
           "color": "#D4AF37"
         }
-      ]
+      ],
+      "expo-transaction-sms-reader"
     ],
     "experiments": {
       "typedRoutes": true

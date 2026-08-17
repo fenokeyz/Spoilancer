@@ -1,0 +1,42 @@
+{
+  "summary": "Iteration 2 (Spoilancer follow-up) PASSED. Backend regression: 7/7 pytest tests green (root /api/, /api/auth/me valid/no-auth/bogus, /api/auth/session bogus id -> 401, /api/advisor/analyze without auth -> 401, /api/advisor/analyze with 'test-token-abc' returns valid Gemini JSON with all 5 keys summary/overall_health/limit_suggestions/spoilance_suggestion/tips in ~7s). Frontend (Expo web, 390x844): CHANGE 3 Indian lakh/crore grouping VERIFIED on every requested input — stipend-input '4000000'->'40,00,000', field-amount-input '125000'->'1,25,000' AND '7777'->'7,777' (also in Limits screen), spoilance-alloc-input '500000'->'5,00,000', gate-amount-input '12345'->'12,345', edit-savings-input '1234567'->'12,34,567', edit-spoilance-input '300000'->'3,00,000', move-amount-input '55000'->'55,000', item-cost-0 '1500'->'1,500'. Projected-savings math correct on the 9/9 summary step. CHANGE 2 (SMS): sms-auto-unsupported fallback card renders on web, sms-input + sms-parse-button detect '₹250' from 'Rs 250 debited', graceful message shown when no unlogged field exists (expected — same behaviour as iter1). CHANGE 1 (tab bar): bottom tabs Home/History/Profile present, tappable, switch tabs, and have a visible translucent BlurView+rgba(13,13,17,0.82) fill (content no longer bleeds). CHANGE 4 (notification reply): app boots with NotificationResponder mounted, no red screen / crash from category registration (only pre-existing RN-web warnings). BUTTON AUDIT: all requested testIDs render and are tappable — login (continue-offline-button + google-signin-button), onboarding (onboarding-back/continue, add-field-button, copy-previous-day, field editor + all 4 validations blocking save on empty title / bad amount / hour=25 / minute=77, spoilance-preset-0.25, onboarding-finish), gate (typed '12345'->'12,345' formatting + gate-submit-button), Home (profile-avatar, edit-balances-button, action-edit-limits/advisor/parse-sms/history, spoilance-logger-fab), Balances modal (edit-savings-input, edit-spoilance-input, move-amount-input, save-balances-button closes modal, move-to-savings-button, edit-balances-close), Limits (limits-back, day-chip-0..6, limits-add-button opens editor with comma-formatted field-amount-input, field-editor-close), Spoilance Logger (logger-close, count-plus/minus/continue, item-name-0, item-cost-0 formatted, add-item-row, running-total, save-spoilance-button), Advisor (advisor-back visible, advisor-analyze-button shows expected 'Sign in with Google to use the AI Advisor' toast in guest mode), History renders with all-time savings/spoilance cards, Profile (setting-language/reminders/limits/app/signout/wipe all present; language modal exposes 6 lang-* options + lang-close; App Settings shows settings-back + reminders-switch). NO React Native red screens, no crashes. Deprecated packages check: none of expo-av / expo-barcode-scanner / expo-background-fetch imported. Only minor pre-existing RN-web console warnings ('shadow*' deprecated, 'props.pointerEvents' deprecated) — same as iter1, non-blocking.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Home hero savings card", "issue": "Large savings values overflow / truncate (e.g. ₹30,000 rendered as '₹30,0...' when both hero numbers shown side-by-side on 390px wide viewport). Consider adjustsFontSizeToFit / numberOfLines={1} + minimumFontScale, or shrink font when value width > container.", "testID": "edit-balances-button (parent card)", "priority": "MINOR"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Home", "issues": ["Savings hero currency string may truncate on narrow viewports — auto-shrink font recommended."]}
+    ],
+    "react_native_issues": [
+      {"component": "Bottom tab bar buttons (Tabs.Screen)", "issue": "Tab items in /app/frontend/app/(tabs)/_layout.tsx lack testIDs — only reachable via a[href=\"/home\"] etc. Add options={{ tabBarButtonTestID: 'tab-home' }} (or a custom tabBarButton) so QA / Detox / Playwright can target Home/History/Profile tabs deterministically. Reference: /app/frontend/app/(tabs)/_layout.tsx:41-70"},
+      {"component": "react-native-web shadow* props", "issue": "Console warning: '\"shadow*\" style props are deprecated. Use \"boxShadow\".' Same as iter1 — cosmetic, RN-web only. Reference: /app/frontend/src/components (GlassCard / Toast)"},
+      {"component": "props.pointerEvents", "issue": "Console warning: 'props.pointerEvents is deprecated. Use style.pointerEvents'. Same as iter1 — cosmetic, RN-web only."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/conftest.py",
+    "/app/backend/tests/test_spoilancer_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Add tabBarButtonTestID (or a testID-forwarding custom tabBarButton) to each Tabs.Screen in /app/frontend/app/(tabs)/_layout.tsx so tests can target tab-home / tab-history / tab-profile without falling back to href selectors.",
+    "Make the Home hero card numeric values shrink-to-fit (adjustsFontSizeToFit on iOS + numberOfLines={1} + minimumFontScale, or use FitText-like helper) so large balances like ₹1,00,00,000 do not truncate as '₹30,0...'.",
+    "Cosmetic (carry-over from iter1): migrate remaining shadow* style props to boxShadow for RN-web parity and replace prop-based pointerEvents with style.pointerEvents to silence deprecation warnings."
+  ],
+  "critical_code_review_comments": [
+    "Indian-grouping formatter is applied consistently across every numeric input requested (stipend / field-amount / spoilance-alloc / gate / edit-savings / edit-spoilance / move-amount / item-cost) — good DRY.",
+    "Advisor guest-mode block is enforced at UI layer with a clear toast — matches product intent; backend still enforces auth (verified via pytest).",
+    "BlurView + rgba(13,13,17,0.82) overlay in TabBarBackground correctly fixes the transparent bleed-through; tab bar remains visible on scroll.",
+    "parse-sms.tsx correctly surfaces sms-auto-unsupported fallback when isNativeSmsSupported() is false — matches Expo Go / web behaviour; manual paste path unaffected.",
+    "server.py continues to return 401 (not 403) for missing/invalid auth and excludes MongoDB _id via projection — good."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (7/7)", "frontend": "100% (all requested flows + comma formatting verified; tab bar reached via href selectors due to missing testIDs)"},
+  "seed_data_creation": "None. Existing seeded user (user_test123 / test-token-abc) reused for backend auth tests.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Frontend backend URL key is EXPO_PUBLIC_BACKEND_URL (not EXPO_BACKEND_URL). Each Playwright session starts with empty localStorage — always tap continue-offline-button first. Onboarding has 9 steps: stipend + 7 daily-limit day pages + a combined spoilance/summary page (Set me up = onboarding-finish). To force the gate on Monday, add a field at hour=0 minute=1 during onboarding. Tab bar buttons currently have NO testID — target them via a[href=\"/home\"], a[href=\"/history\"], a[href=\"/profile\"] until main agent adds tabBarButtonTestID.",
+  "rca_of_issue": "No functional issues. All 4 change-requests (tab-bar fill, SMS fallback, comma-on-type, notification responder mount) and the full button audit pass end-to-end. The only new observations are minor: (a) tab items missing testIDs, (b) Home hero card can truncate very large savings values, and (c) two pre-existing RN-web console deprecation warnings from iter1 remain non-blocking."
+}

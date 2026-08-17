@@ -112,10 +112,11 @@ export default function Gate() {
                 testID="gate-amount-input"
                 label="Amount spent"
                 value={amount}
-                onChangeText={(t) => setAmount(t.replace(/[^0-9.]/g, ""))}
+                onChangeText={setAmount}
                 placeholder="0"
                 prefix="₹"
                 keyboardType="numeric"
+                money
                 autoFocus
               />
               {amount ? (

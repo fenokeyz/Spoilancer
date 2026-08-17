@@ -250,10 +250,11 @@ function StipendStep({ stipend, setStipend }: { stipend: string; setStipend: (t:
           testID="stipend-input"
           label="Monthly stipend"
           value={stipend}
-          onChangeText={(t) => setStipend(t.replace(/[^0-9.]/g, ""))}
+          onChangeText={setStipend}
           placeholder="0"
           prefix="₹"
           keyboardType="numeric"
+          money
           autoFocus
         />
       </View>
@@ -384,10 +385,11 @@ function SummaryStep({
           testID="spoilance-alloc-input"
           label="Spoilance allocation"
           value={spoilanceAlloc}
-          onChangeText={(t) => setSpoilanceAlloc(t.replace(/[^0-9.]/g, ""))}
+          onChangeText={setSpoilanceAlloc}
           placeholder="0"
           prefix="₹"
           keyboardType="numeric"
+          money
         />
       </View>
 

@@ -12,6 +12,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { AuthProvider } from "@/src/store/AuthContext";
 import { ToastProvider } from "@/src/components/Toast";
+import { NotificationResponder } from "@/src/components/NotificationResponder";
 import { colors } from "@/src/theme";
 
 // Disable logbox errors etc so that users can see the app
@@ -54,6 +55,7 @@ export default function RootLayout() {
             <AuthProvider>
               <ToastProvider>
                 <StatusBar style="light" />
+                <NotificationResponder />
                 <Stack
                   screenOptions={{
                     headerShown: false,
