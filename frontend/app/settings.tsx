@@ -4,12 +4,18 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
-import { AppText, ScreenBackground, GlassCard } from "@/src/components/ui";
+import { AppText, ScreenBackground, GlassCard, PrimaryButton } from "@/src/components/ui";
 import { colors, fonts, fontSize, radius, spacing } from "@/src/theme";
 import { storage } from "@/src/utils/storage";
 import { useToast } from "@/src/components/Toast";
 import { ensureNotificationPermission, rescheduleReminders } from "@/src/utils/notifications";
 import * as Notifications from "expo-notifications";
+import {
+  getProfile,
+  setLeftoverTarget,
+  forceMonthEnd,
+  LeftoverTarget,
+} from "@/src/store/finance";
 
 const REMINDERS_KEY = "spoilancer.reminders_on";
 
@@ -20,10 +26,13 @@ export default function Settings() {
 
   const [remindersOn, setRemindersOn] = useState(true);
   const [scheduledCount, setScheduledCount] = useState(0);
+  const [leftoverTarget, setLeftoverTargetState] = useState<LeftoverTarget>("spoilance");
 
   const load = useCallback(async () => {
     const on = await storage.getItem<boolean>(REMINDERS_KEY, true);
     setRemindersOn(on === null ? true : (on as boolean));
+    const p = await getProfile();
+    if (p) setLeftoverTargetState(p.leftoverTarget);
     try {
       const scheduled = await Notifications.getAllScheduledNotificationsAsync();
       setScheduledCount(scheduled.length);
@@ -33,6 +42,24 @@ export default function Settings() {
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  async function pickLeftoverTarget(t: LeftoverTarget) {
+    setLeftoverTargetState(t);
+    await setLeftoverTarget(t);
+    toast.show(
+      t === "spoilance" ? "Daily savings now build your Spoilance" : "Daily savings now stay in your balance",
+      "success",
+    );
+  }
+
+  async function simulateMonthEnd() {
+    const ok = await forceMonthEnd();
+    if (ok) {
+      toast.show("Month closed — check History & Home", "success");
+    } else {
+      toast.show("Finish onboarding first", "error");
+    }
+  }
 
   async function toggleReminders(next: boolean) {
     setRemindersOn(next);
@@ -89,6 +116,35 @@ export default function Settings() {
           </View>
         </GlassCard>
 
+        <AppText variant="heading" style={styles.section}>Money flow</AppText>
+        <GlassCard style={{ gap: spacing.md }}>
+          <AppText variant="caption" style={{ lineHeight: 16 }}>
+            When you spend under a daily limit, where should the money you saved go?
+          </AppText>
+          <View style={styles.segment}>
+            <Pressable
+              testID="leftover-spoilance"
+              onPress={() => pickLeftoverTarget("spoilance")}
+              style={[styles.segmentBtn, leftoverTarget === "spoilance" && styles.segmentBtnActive]}
+            >
+              <Ionicons name="sparkles" size={16} color={leftoverTarget === "spoilance" ? colors.onBrandPrimary : colors.onSurfaceSecondary} />
+              <AppText variant="label" style={{ color: leftoverTarget === "spoilance" ? colors.onBrandPrimary : colors.onSurfaceSecondary }}>
+                Spoilance
+              </AppText>
+            </Pressable>
+            <Pressable
+              testID="leftover-savings"
+              onPress={() => pickLeftoverTarget("savings")}
+              style={[styles.segmentBtn, leftoverTarget === "savings" && styles.segmentBtnActive]}
+            >
+              <Ionicons name="wallet" size={16} color={leftoverTarget === "savings" ? colors.onBrandPrimary : colors.onSurfaceSecondary} />
+              <AppText variant="label" style={{ color: leftoverTarget === "savings" ? colors.onBrandPrimary : colors.onSurfaceSecondary }}>
+                Savings
+              </AppText>
+            </Pressable>
+          </View>
+        </GlassCard>
+
         <AppText variant="heading" style={styles.section}>Appearance</AppText>
         <GlassCard style={styles.rowBetween}>
           <View style={styles.iconRow}>
@@ -103,6 +159,12 @@ export default function Settings() {
           <InfoRow icon="refresh-outline" title="Monthly reset" text="At month-end, leftover spoilance rolls into savings and a fresh month begins automatically." />
           <View style={styles.divider} />
           <InfoRow icon="lock-closed-outline" title="On-device only" text="All budgets, limits and history stay on this phone. Only AI analysis is sent securely — and never stored." />
+        </GlassCard>
+
+        <AppText variant="heading" style={styles.section}>Developer</AppText>
+        <GlassCard style={{ gap: spacing.md }}>
+          <InfoRow icon="time-outline" title="Simulate month-end" text="Time-travel: close this month now, roll leftover spoilance into savings, and start a fresh month. Use it to preview History." />
+          <PrimaryButton testID="simulate-month-end" label="Close current month (test)" onPress={simulateMonthEnd} />
         </GlassCard>
 
         <AppText variant="caption" style={styles.footer}>Spoilancer · v1.0</AppText>
@@ -131,5 +193,19 @@ const styles = StyleSheet.create({
   iconRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   divider: { height: 1, backgroundColor: colors.divider },
   infoRow: { flexDirection: "row", gap: spacing.md, alignItems: "flex-start" },
+  segment: { flexDirection: "row", gap: spacing.md },
+  segmentBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+    height: 48,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceTertiary,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  segmentBtnActive: { backgroundColor: colors.brand, borderColor: colors.brand },
   footer: { textAlign: "center", marginTop: spacing["2xl"] },
 });

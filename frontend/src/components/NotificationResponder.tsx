@@ -22,8 +22,8 @@ export function NotificationResponder() {
       if (!response) return;
       const result = await handleNotificationResponse(response);
       if (result === "logged") {
+        // Inline reply handled in the background — just confirm, don't force-navigate.
         toast.show("Logged from your reminder ✦", "success");
-        router.replace("/");
       } else if (result === "open") {
         router.replace("/");
       }

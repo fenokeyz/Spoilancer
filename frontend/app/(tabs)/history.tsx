@@ -97,7 +97,7 @@ export default function History() {
           <>
             <AppText variant="heading" style={styles.section}>This month · {monthLabel(monthKeyOf())}</AppText>
             <GlassCard style={{ gap: spacing.md, marginHorizontal: spacing.xl }}>
-              <SummaryRow label="Current savings" value={formatMoney(profile.savings)} color={colors.success} />
+              <SummaryRow label="Balance left" value={formatMoney(profile.balance)} color={profile.balance < 0 ? colors.error : colors.success} />
               <SummaryRow label="Current spoilance" value={formatMoney(profile.spoilance)} color={colors.brand} />
               <View style={styles.divider} />
               <SummaryRow label="Spoilance spent" value={formatMoney(monthSpoilanceSpent)} />

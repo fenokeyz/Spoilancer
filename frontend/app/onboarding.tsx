@@ -144,9 +144,10 @@ export default function Onboarding() {
       email: user?.email || "",
       currency: "INR",
       stipend: stipendNum,
-      savings: Math.round((projectedSavings - alloc) * 100) / 100,
+      balance: Math.round((stipendNum - alloc) * 100) / 100,
       spoilance: alloc,
       spoilanceLimit: alloc,
+      leftoverTarget: "spoilance",
       onboarded: true,
       monthKey: monthKeyOf(),
       createdAt: new Date().toISOString(),
@@ -394,9 +395,12 @@ function SummaryStep({
       </View>
 
       <GlassCard style={{ marginTop: spacing.md, gap: spacing.md }}>
-        <Row label="Savings" value={formatMoney(finalSavings)} highlight />
+        <Row label="Projected savings" value={formatMoney(finalSavings)} highlight />
         <Row label="Spoilance" value={formatMoney(alloc)} brandValue />
       </GlassCard>
+      <AppText variant="caption" style={{ marginTop: spacing.md, lineHeight: 16, color: colors.onSurfaceTertiary }}>
+        Projected if you hit every limit. Home shows your live balance as you actually spend.
+      </AppText>
     </KeyboardAwareScrollView>
   );
 }

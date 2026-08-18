@@ -4,14 +4,17 @@
 import { storage } from "@/src/utils/storage";
 
 // ---------------- Types ----------------
+export type LeftoverTarget = "spoilance" | "savings";
+
 export interface Profile {
   name: string;
   email: string;
   currency: string;
   stipend: number;
-  savings: number;
+  balance: number; // remaining spendable money from THIS month's stipend (excludes spoilance)
   spoilance: number; // current available splurge balance
   spoilanceLimit: number; // monthly allocated splurge budget
+  leftoverTarget: LeftoverTarget; // where daily under-spend leftovers go
   onboarded: boolean;
   monthKey: string; // "YYYY-MM" currently tracked
   createdAt: string;
@@ -36,6 +39,8 @@ export interface ExpenseEntry {
   limit: number;
   amount: number; // actual spent
   leftover: number;
+  target: LeftoverTarget;
+  kind: "budget" | "misc";
   source: "gate" | "manual" | "sms";
   timestamp: string;
   monthKey: string;
@@ -105,6 +110,12 @@ export function monthKeyOf(d: Date = new Date()): string {
   return `${y}-${m}`;
 }
 
+export function nextMonthKey(key: string): string {
+  const [y, m] = key.split("-").map(Number);
+  const d = new Date(y, m - 1 + 1, 1);
+  return monthKeyOf(d);
+}
+
 // JS getDay(): 0=Sun..6=Sat -> our index 0=Mon..6=Sun
 export function weekdayIndex(d: Date = new Date()): number {
   return (d.getDay() + 6) % 7;
@@ -139,13 +150,40 @@ function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
 // ---------------- Profile ----------------
 export async function getProfile(): Promise<Profile | null> {
-  return loadJSON<Profile | null>(K.profile, null);
+  const p = await loadJSON<any>(K.profile, null);
+  if (!p) return null;
+  // Migration from the old "savings"-based model.
+  let dirty = false;
+  if (p.balance === undefined) {
+    p.balance = p.savings ?? Math.max(0, (p.stipend ?? 0) - (p.spoilanceLimit ?? 0));
+    dirty = true;
+  }
+  if (p.leftoverTarget === undefined) {
+    p.leftoverTarget = "spoilance";
+    dirty = true;
+  }
+  if (dirty) {
+    delete p.savings;
+    await saveJSON(K.profile, p);
+  }
+  return p as Profile;
 }
 
 export async function saveProfile(p: Profile): Promise<void> {
   await saveJSON(K.profile, p);
+}
+
+export async function setLeftoverTarget(target: LeftoverTarget): Promise<void> {
+  const p = await getProfile();
+  if (!p) return;
+  p.leftoverTarget = target;
+  await saveProfile(p);
 }
 
 // ---------------- Templates ----------------
@@ -205,14 +243,19 @@ export async function getPendingFields(now: Date = new Date()): Promise<ExpenseF
   });
 }
 
-// Log an actual spend for a field. Leftover flows into spoilance balance.
+// Log an actual spend against a budgeted field.
+// The spent amount always leaves the month balance. Under-spend leftover is
+// routed to spoilance OR left in balance (savings) per the user's setting.
 export async function logExpense(
   field: ExpenseField,
   spent: number,
   source: ExpenseEntry["source"] = "manual",
   now: Date = new Date(),
 ): Promise<void> {
-  const leftover = field.amount - spent;
+  const leftover = round2(field.amount - spent);
+  const profile = await getProfile();
+  const target: LeftoverTarget = profile?.leftoverTarget ?? "spoilance";
+
   const entry: ExpenseEntry = {
     id: uid(),
     fieldId: field.id,
@@ -222,7 +265,44 @@ export async function logExpense(
     limit: field.amount,
     amount: spent,
     leftover,
+    target,
+    kind: "budget",
     source,
+    timestamp: now.toISOString(),
+    monthKey: monthKeyOf(now),
+  };
+  const all = await getEntries();
+  all.push(entry);
+  await saveJSON(K.entries, all);
+
+  if (profile) {
+    profile.balance = round2(profile.balance - spent);
+    if (leftover > 0 && target === "spoilance") {
+      profile.balance = round2(profile.balance - leftover);
+      profile.spoilance = round2(profile.spoilance + leftover);
+    }
+    await saveProfile(profile);
+  }
+}
+
+// Ad-hoc / miscellaneous expense not tied to any budget field.
+export async function logMisc(
+  title: string,
+  amount: number,
+  now: Date = new Date(),
+): Promise<void> {
+  const entry: ExpenseEntry = {
+    id: uid(),
+    fieldId: "misc",
+    title: title || "Misc expense",
+    dateKey: todayKey(now),
+    weekday: weekdayIndex(now),
+    limit: amount,
+    amount,
+    leftover: 0,
+    target: "savings",
+    kind: "misc",
+    source: "manual",
     timestamp: now.toISOString(),
     monthKey: monthKeyOf(now),
   };
@@ -232,7 +312,7 @@ export async function logExpense(
 
   const profile = await getProfile();
   if (profile) {
-    profile.spoilance = Math.round((profile.spoilance + leftover) * 100) / 100;
+    profile.balance = round2(profile.balance - amount);
     await saveProfile(profile);
   }
 }
@@ -261,26 +341,26 @@ export async function addSpoilanceLog(
 
   const profile = await getProfile();
   if (profile) {
-    profile.spoilance = Math.round((profile.spoilance - total) * 100) / 100;
+    profile.spoilance = round2(profile.spoilance - total);
     await saveProfile(profile);
   }
 }
 
 // ---------------- Balance edits ----------------
-export async function setBalances(savings: number, spoilance: number): Promise<void> {
+export async function setBalances(balance: number, spoilance: number): Promise<void> {
   const p = await getProfile();
   if (!p) return;
-  p.savings = savings;
+  p.balance = balance;
   p.spoilance = spoilance;
   await saveProfile(p);
 }
 
-export async function moveSpoilanceToSavings(amount: number): Promise<void> {
+export async function moveSpoilanceToBalance(amount: number): Promise<void> {
   const p = await getProfile();
   if (!p) return;
   const amt = Math.min(amount, p.spoilance);
-  p.spoilance = Math.round((p.spoilance - amt) * 100) / 100;
-  p.savings = Math.round((p.savings + amt) * 100) / 100;
+  p.spoilance = round2(p.spoilance - amt);
+  p.balance = round2(p.balance + amt);
   await saveProfile(p);
 }
 
@@ -289,26 +369,14 @@ export async function getSnapshots(): Promise<MonthSnapshot[]> {
   return loadJSON<MonthSnapshot[]>(K.snapshots, []);
 }
 
-export interface AllTimeTotals {
-  savings: number;
-  spoilance: number;
-}
-
-export async function getAllTimeTotals(): Promise<AllTimeTotals> {
+export async function getLastMonthSavings(): Promise<MonthSnapshot | null> {
   const snaps = await getSnapshots();
-  return {
-    savings: snaps.reduce((s, m) => s + m.savings, 0),
-    spoilance: snaps.reduce((s, m) => s + m.spoilanceSpent, 0),
-  };
+  if (snaps.length === 0) return null;
+  return snaps.slice().sort((a, b) => (a.monthKey < b.monthKey ? 1 : -1))[0];
 }
 
-// Monthly reset: close previous month, move leftover spoilance -> savings, start fresh month.
-export async function performMonthlyResetIfNeeded(now: Date = new Date()): Promise<boolean> {
-  const p = await getProfile();
-  if (!p || !p.onboarded) return false;
-  const current = monthKeyOf(now);
-  if (p.monthKey === current) return false;
-
+// Core month-close routine, shared by auto reset and forced (test) close.
+async function closeMonth(p: Profile, newMonthKey: string, now: Date): Promise<void> {
   const prevMonth = p.monthKey;
   const entries = await getEntries();
   const logs = await getSpoilanceLogs();
@@ -322,7 +390,7 @@ export async function performMonthlyResetIfNeeded(now: Date = new Date()): Promi
 
   const snapshot: MonthSnapshot = {
     monthKey: prevMonth,
-    savings: Math.round((p.savings + spoilanceLeftover) * 100) / 100,
+    savings: round2(Math.max(0, p.balance) + spoilanceLeftover),
     spoilanceLimit: p.spoilanceLimit,
     spoilanceSpent,
     spoilanceLeftover,
@@ -337,11 +405,30 @@ export async function performMonthlyResetIfNeeded(now: Date = new Date()): Promi
     await saveJSON(K.snapshots, snaps);
   }
 
-  // Roll forward: leftover spoilance becomes savings; spoilance resets to its allocation.
-  p.savings = Math.round((p.savings + spoilanceLeftover) * 100) / 100;
+  // Start fresh month: balance resets from stipend (spoilance carved out again).
+  p.balance = round2(p.stipend - p.spoilanceLimit);
   p.spoilance = p.spoilanceLimit;
-  p.monthKey = current;
+  p.monthKey = newMonthKey;
   await saveProfile(p);
+}
+
+// Auto reset when the calendar month has rolled over.
+export async function performMonthlyResetIfNeeded(now: Date = new Date()): Promise<boolean> {
+  const p = await getProfile();
+  if (!p || !p.onboarded) return false;
+  const current = monthKeyOf(now);
+  if (p.monthKey === current) return false;
+  await closeMonth(p, current, now);
+  return true;
+}
+
+// Forced month-end (developer / QA "time travel"): closes the current tracked
+// month and advances to the next month regardless of the real date.
+export async function forceMonthEnd(now: Date = new Date()): Promise<boolean> {
+  const p = await getProfile();
+  if (!p || !p.onboarded) return false;
+  const newKey = nextMonthKey(p.monthKey);
+  await closeMonth(p, newKey, now);
   return true;
 }
 

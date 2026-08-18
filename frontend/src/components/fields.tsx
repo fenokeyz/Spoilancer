@@ -193,9 +193,15 @@ export function FieldEditorModal({
                   testID="field-hour-input"
                   label="Hour (0–23)"
                   value={draft.hour}
-                  onChangeText={(t) => setDraft((d) => ({ ...d, hour: t.replace(/[^0-9]/g, "") }))}
+                  onChangeText={(t) => {
+                    const digits = t.replace(/[^0-9]/g, "").slice(0, 2);
+                    const n = parseInt(digits, 10);
+                    const clamped = digits === "" ? "" : String(Math.min(23, isNaN(n) ? 0 : n));
+                    setDraft((d) => ({ ...d, hour: clamped }));
+                  }}
                   placeholder="9"
-                  keyboardType="numeric"
+                  keyboardType="number-pad"
+                  maxLength={2}
                 />
               </View>
               <View style={{ flex: 1 }}>
@@ -203,9 +209,15 @@ export function FieldEditorModal({
                   testID="field-minute-input"
                   label="Minute (0–59)"
                   value={draft.minute}
-                  onChangeText={(t) => setDraft((d) => ({ ...d, minute: t.replace(/[^0-9]/g, "") }))}
+                  onChangeText={(t) => {
+                    const digits = t.replace(/[^0-9]/g, "").slice(0, 2);
+                    const n = parseInt(digits, 10);
+                    const clamped = digits === "" ? "" : String(Math.min(59, isNaN(n) ? 0 : n));
+                    setDraft((d) => ({ ...d, minute: clamped }));
+                  }}
                   placeholder="00"
-                  keyboardType="numeric"
+                  keyboardType="number-pad"
+                  maxLength={2}
                 />
               </View>
             </View>

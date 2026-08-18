@@ -110,9 +110,16 @@ export async function handleNotificationResponse(
         const field = templates.find((t: ExpenseField) => t.id === data.fieldId);
         if (field) {
           await logExpense(field, amount, "sms");
+          // Clear the notification so its inline-reply spinner doesn't hang.
+          try {
+            await Notifications.dismissNotificationAsync(response.notification.request.identifier);
+          } catch {}
           return "logged";
         }
       }
+      try {
+        await Notifications.dismissNotificationAsync(response.notification.request.identifier);
+      } catch {}
       return null;
     }
     // default tap

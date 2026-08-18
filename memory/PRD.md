@@ -62,4 +62,21 @@ Data is local-first (only login + AI analysis touch the network).
 - P2: Charts/visualisation in history.
 
 ## Next tasks
-- Run comprehensive testing (backend + frontend offline flows), fix any issues.
+- Iteration 3 complete (see below).
+
+## Iteration 3 (2026-06) — bug fixes + features (all verified)
+- Balance model reworked: Home now shows **current remaining balance** of this month's
+  stipend (excludes spoilance) instead of projected end-of-month savings. New `balance`
+  field + migration from old `savings`. Month-end rolls remaining balance + leftover
+  spoilance into a snapshot; new month resets balance = stipend − spoilanceLimit.
+- **Last-month savings** card on Home + Past-months in History.
+- **Leftover-target setting** (Settings › Money flow): under-spend leftovers go to
+  Spoilance (deducts full limit from balance, grows spoilance) OR stay as Savings
+  (only spent leaves balance). Verified with exact math both ways.
+- **Misc expense** logging on Home (comes straight out of month balance).
+- Fixed hour/minute inputs (clamped 0–23 / 0–59, 2-digit cap).
+- Fixed Parse-SMS crash on Expo Go (native module now guarded via ExecutionEnvironment).
+- Fixed notification quick-reply infinite spinner (dismiss notification after logging).
+- **Simulate month-end** (Settings › Developer) for QA time-travel of monthly reset.
+- Translucent blurred tab bar; live Indian-comma formatting on all money inputs;
+  Android native bank-SMS auto-detect (dev build only, graceful web/Expo Go fallback).

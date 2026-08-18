@@ -2,14 +2,18 @@
 // Safely no-ops on web / iOS / Expo Go (native module absent) so the app never crashes.
 
 import { Platform } from "react-native";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 
 let mod: any = null;
 let attempted = false;
 
+// Expo Go cannot load custom native modules — never attempt the require there.
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
 function lib(): any {
   if (attempted) return mod;
   attempted = true;
-  if (Platform.OS !== "android") {
+  if (Platform.OS !== "android" || isExpoGo) {
     mod = null;
     return null;
   }
